@@ -1,8 +1,9 @@
 import 'package:go_router/go_router.dart';
-import '../presentation/route_placeholder_page.dart';
+import '../../presentation/pages/route_placeholder_page.dart';
 import 'app_routes.dart';
 
 class AppRouter {
+  
   AppRouter()
     : router = GoRouter(
         initialLocation: AppRoutes.login,

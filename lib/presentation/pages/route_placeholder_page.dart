@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../router/app_routes.dart';
+import '../../core/router/app_routes.dart';
 
 class RoutePlaceholderPage extends StatelessWidget {
   const RoutePlaceholderPage({super.key, required this.title});

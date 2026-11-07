@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 
-import 'app/router/app_router.dart';
 import 'core/config/app_config.dart';
+import 'core/di/dependency_injection.dart';
+import 'core/router/app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,14 +12,14 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env');
   final config = AppConfig.fromEnv(dotenv.env);
 
-  final appRouter = AppRouter();
-  runApp(MyApp(config: config, router: appRouter.router));
+  configureDependencies(config);
+
+  runApp(MyApp(router: getIt<AppRouter>().router));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.config, required this.router});
+  const MyApp({super.key, required this.router});
 
-  final AppConfig config;
   final GoRouter router;
 
   @override
