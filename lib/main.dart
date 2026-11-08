@@ -6,12 +6,18 @@ import 'core/config/app_config.dart';
 import 'core/di/dependency_injection.dart';
 import 'core/router/app_router.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: '.env');
   final config = AppConfig.fromEnv(dotenv.env);
 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   configureDependencies(config);
 
   runApp(MyApp(router: getIt<AppRouter>().router));

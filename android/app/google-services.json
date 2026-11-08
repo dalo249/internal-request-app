@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "543075934547",
+    "project_id": "internal-resquest-app",
+    "storage_bucket": "internal-resquest-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:543075934547:android:4270539f885d95669b01a6",
+        "android_client_info": {
+          "package_name": "com.example.internal_request_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCj3HhSgFbwagmGsfd_gL749MsPkUvhLTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
