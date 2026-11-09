@@ -12,7 +12,7 @@ Casos de uso contemplados:
 4. **Crear solicitud:** seleccionar un servicio e ingresar la descripción de la necesidad.
 5. **Asignar supervisor y sincronizar:** conservar la solicitud localmente y sincronizarla con Firestore cuando sea posible.
 
-La base técnica ya incluye configuración de entorno, navegación con `go_router`, registro inicial de dependencias con `get_it` e inicialización de Firebase. **Los casos de uso anteriores describen el alcance funcional; no todos están implementados todavía.**
+La base técnica incluye configuración de entorno, navegación con `go_router`, inyección con `get_it` e inicialización de Firebase. El registro de empleados y la carga del perfil autenticado ya están implementados. `AuthGate` dirige por rol (`employee`, `supervisor`, `executor`); las pantallas de supervisión y ejecución aún son provisionales. **Los demás casos de uso del alcance todavía no están implementados.**
 
 ## Tecnologías
 
@@ -61,10 +61,10 @@ flutter analyze
 
 El punto de composición está en `lib/core/di/dependency_injection.dart`. `configureDependencies` registra `AppConfig` y `AppRouter` en GetIt; las dependencias futuras deben construirse allí y pasarse por constructor a los widgets o servicios que las necesiten.
 
-Las rutas se definen en `lib/core/router/`. Actualmente muestran pantallas provisionales para validar la navegación; los controles de sesión y rol se agregarán al implementar autenticación.
+Las rutas se definen en `lib/core/router/`. `AuthGate` observa la sesión de Firebase y el documento `users/{uid}` en Firestore antes de permitir la navegación. El rol del perfil se convierte a `UserRole`; los valores almacenados actualmente son `employee`, `supervisor` y `executor`. Un perfil inexistente se espera brevemente para admitir la escritura inmediatamente posterior al registro; si no aparece, la app muestra opciones para reintentar o cerrar sesión.
 
 ## Firebase
 
-La configuración generada por FlutterFire está incluida para Android. `main.dart` inicializa Firebase usando `DefaultFirebaseOptions`. Para agregar o configurar otras plataformas, ejecuta FlutterFire CLI desde la raíz del proyecto y selecciona las plataformas necesarias.
+La configuración generada por FlutterFire está incluida para Android. `main.dart` inicializa Firebase usando `DefaultFirebaseOptions`. El registro crea la cuenta en Firebase Authentication y guarda el perfil en `users/{uid}`. `AuthGate` escucha los cambios de Authentication y del perfil para cargar el rol y redirigir a la pantalla correspondiente. Para agregar o configurar otras plataformas, ejecuta FlutterFire CLI desde la raíz del proyecto y selecciona las plataformas necesarias.
 
 Las credenciales de Firebase Authentication no se guardan en Firestore. Antes de usar datos remotos, configura en Firebase Console los proveedores de acceso y reglas de Firestore apropiadas.
