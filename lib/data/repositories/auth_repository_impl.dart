@@ -55,6 +55,22 @@ final class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final result = await _authRemoteDataSource.signIn(
+      email: email,
+      password: password,
+    );
+
+    return switch (result) {
+      Ok<void>() => Result.ok(null),
+      Error<void>() => Result.error(_mapAuthFailure(result.error)),
+    };
+  }
+
+  @override
   Future<Result<UserProfile>> registerEmployee({
     required String name,
     required String email,

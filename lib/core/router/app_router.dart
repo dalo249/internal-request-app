@@ -4,6 +4,7 @@ import 'package:internal_request_app/presentation/pages/authenticated_home_page.
 import 'package:go_router/go_router.dart';
 import 'package:internal_request_app/presentation/pages/auth_page.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -26,16 +27,30 @@ class AppRouter {
           GoRoute(
             path: AppRoutes.login,
             name: AppRouteNames.login,
-            builder: (context, state) => ChangeNotifierProvider(
-              create: (_) => getIt<RegisterEmployeeViewModel>(),
+            builder: (context, state) => MultiProvider(
+              providers: [
+                ChangeNotifierProvider<RegisterEmployeeViewModel>(
+                  create: (_) => getIt<RegisterEmployeeViewModel>(),
+                ),
+                ChangeNotifierProvider<LoginUserViewModel>(
+                  create: (_) => getIt<LoginUserViewModel>(),
+                ),
+              ],
               child: const AuthPage(initialMode: AuthPageMode.login),
             ),
           ),
           GoRoute(
             path: AppRoutes.register,
             name: AppRouteNames.register,
-            builder: (context, state) => ChangeNotifierProvider(
-              create: (_) => getIt<RegisterEmployeeViewModel>(),
+            builder: (context, state) => MultiProvider(
+              providers: [
+                ChangeNotifierProvider<RegisterEmployeeViewModel>(
+                  create: (_) => getIt<RegisterEmployeeViewModel>(),
+                ),
+                ChangeNotifierProvider<LoginUserViewModel>(
+                  create: (_) => getIt<LoginUserViewModel>(),
+                ),
+              ],
               child: const AuthPage(initialMode: AuthPageMode.register),
             ),
           ),
@@ -49,7 +64,7 @@ class AppRouter {
             path: AppRoutes.myRequests,
             name: AppRouteNames.myRequests,
             builder: (context, state) =>
-                const AuthenticatedHomePage(role: UserRole.employee),
+                const RoutePlaceholderPage(title: 'Mis solicitudes'),
           ),
           GoRoute(
             path: AppRoutes.supervision,
@@ -97,15 +112,21 @@ class AppRouter {
   }
 
   static String _homeRoute(UserRole role) => switch (role) {
-    UserRole.employee => AppRoutes.myRequests,
+    UserRole.employee => AppRoutes.services,
     UserRole.supervisor => AppRoutes.supervision,
     UserRole.executor => AppRoutes.work,
   };
 
-  static bool _canAccessRoute(UserRole role, String location) => switch (role) {
-    UserRole.employee =>
-      location == AppRoutes.myRequests || location == AppRoutes.services,
-    UserRole.supervisor => location == AppRoutes.supervision,
-    UserRole.executor => location == AppRoutes.work,
-  };
+  static bool _canAccessRoute(UserRole role, String location) {
+    final isCommonRoute =
+        location == AppRoutes.services || location == AppRoutes.myRequests;
+
+    if (isCommonRoute) return true;
+
+    return switch (role) {
+      UserRole.employee => false,
+      UserRole.supervisor => location == AppRoutes.supervision,
+      UserRole.executor => location == AppRoutes.work,
+    };
+  }
 }

@@ -4,12 +4,14 @@ import 'package:internal_request_app/domain/models/user_profile.dart';
 import 'package:internal_request_app/domain/repositories/auth_repository.dart';
 
 final class FakeAuthRepository implements AuthRepository {
-  FakeAuthRepository({this.result, this.onRegister});
+  FakeAuthRepository({this.result, this.onRegister, this.signInResult});
 
   final Result<UserProfile>? result;
   final Future<Result<UserProfile>> Function()? onRegister;
+  final Result<void>? signInResult;
 
   int callCount = 0;
+  int signInCallCount = 0;
   String? receivedName;
   String? receivedEmail;
   String? receivedPassword;
@@ -53,5 +55,17 @@ final class FakeAuthRepository implements AuthRepository {
             areaId: '4',
           ),
         );
+  }
+
+  @override
+  Future<Result<void>> signIn({
+    required String email,
+    required String password,
+  }) async {
+    signInCallCount++;
+    receivedEmail = email;
+    receivedPassword = password;
+
+    return signInResult ?? Result.ok(null);
   }
 }

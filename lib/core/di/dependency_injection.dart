@@ -5,9 +5,11 @@ import 'package:internal_request_app/data/datasources/auth_remote_datasource.dar
 import 'package:internal_request_app/data/datasources/user_profile_remote_datasource.dart';
 import 'package:internal_request_app/data/repositories/auth_repository_impl.dart';
 import 'package:internal_request_app/domain/repositories/auth_repository.dart';
+import 'package:internal_request_app/domain/usecases/login_user.dart';
 import 'package:internal_request_app/domain/usecases/register_employee.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
 
 import '../config/app_config.dart';
 import '../router/app_router.dart';
@@ -42,8 +44,14 @@ void configureDependencies(AppConfig config) {
     () => RegisterEmployee(getIt<AuthRepository>()),
   );
 
+  getIt.registerFactory<LoginUser>(() => LoginUser(getIt<AuthRepository>()));
+
   getIt.registerFactory<RegisterEmployeeViewModel>(
     () => RegisterEmployeeViewModel(getIt<RegisterEmployee>()),
+  );
+
+  getIt.registerFactory<LoginUserViewModel>(
+    () => LoginUserViewModel(getIt<LoginUser>()),
   );
 
   getIt.registerLazySingleton<AuthGateViewModel>(

@@ -47,6 +47,25 @@ final class AuthRemoteDataSource {
       return Result.error(exception);
     }
   }
+
+  //Login user en firebase  con email, password
+  Future<Result<void>> signIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      return Result.ok(null);
+    } on FirebaseAuthException catch (exception) {
+      return Result.error(exception);
+    } on Exception catch (exception) {
+      return Result.error(exception);
+    }
+  }
 }
 
 final class AuthAccountCreationException implements Exception {

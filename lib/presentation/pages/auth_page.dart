@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:internal_request_app/presentation/widgets/login_form.dart';
 import 'package:internal_request_app/presentation/widgets/register_employee_form.dart';
@@ -27,14 +28,22 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   void _changeMode() {
-    final viewModel = context.read<RegisterEmployeeViewModel>();
-    final status = viewModel.state.status;
+    final registerViewModel = context.read<RegisterEmployeeViewModel>();
+    final loginViewModel = context.read<LoginUserViewModel>();
 
-    if (status == RegisterEmployeeStatus.submitting) return;
+    if (registerViewModel.state.status == RegisterEmployeeStatus.submitting ||
+        loginViewModel.state.status == LoginUserStatus.submitting) {
+      return;
+    }
 
-    if (status != RegisterEmployeeStatus.success &&
-        status != RegisterEmployeeStatus.profilePending) {
-      viewModel.reset();
+    if (_isRegisterMode) {
+      final status = registerViewModel.state.status;
+      if (status != RegisterEmployeeStatus.success &&
+          status != RegisterEmployeeStatus.profilePending) {
+        registerViewModel.reset();
+      }
+    } else if (loginViewModel.state.status != LoginUserStatus.success) {
+      loginViewModel.reset();
     }
 
     setState(() {
@@ -44,9 +53,13 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isSubmitting =
+    final isRegisterSubmitting =
         context.watch<RegisterEmployeeViewModel>().state.status ==
         RegisterEmployeeStatus.submitting;
+    final isLoginSubmitting =
+        context.watch<LoginUserViewModel>().state.status ==
+        LoginUserStatus.submitting;
+    final isSubmitting = isRegisterSubmitting || isLoginSubmitting;
 
     return Scaffold(
       appBar: AppBar(
