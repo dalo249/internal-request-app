@@ -1,15 +1,19 @@
 import 'package:internal_request_app/domain/enums/user_role.dart';
 import 'package:internal_request_app/presentation/pages/auth_gate_page.dart';
-import 'package:internal_request_app/presentation/pages/authenticated_home_page.dart';
+import 'package:internal_request_app/presentation/pages/my_requests_page.dart';
+import 'package:internal_request_app/presentation/pages/services_creation_page.dart';
+import 'package:internal_request_app/presentation/pages/supervision_page.dart';
+import 'package:internal_request_app/presentation/pages/work_board_page.dart';
+import 'package:internal_request_app/presentation/widgets/authenticated_shell.dart';
 import 'package:go_router/go_router.dart';
 import 'package:internal_request_app/presentation/pages/auth_page.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/area_catalog_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:provider/provider.dart';
 
 import '../di/dependency_injection.dart';
-import '../../presentation/pages/route_placeholder_page.dart';
 import 'app_routes.dart';
 
 class AppRouter {
@@ -54,29 +58,35 @@ class AppRouter {
               child: const AuthPage(initialMode: AuthPageMode.register),
             ),
           ),
-          GoRoute(
-            path: AppRoutes.services,
-            name: AppRouteNames.services,
-            builder: (context, state) =>
-                const RoutePlaceholderPage(title: 'Servicios y creacion'),
-          ),
-          GoRoute(
-            path: AppRoutes.myRequests,
-            name: AppRouteNames.myRequests,
-            builder: (context, state) =>
-                const RoutePlaceholderPage(title: 'Mis solicitudes'),
-          ),
-          GoRoute(
-            path: AppRoutes.supervision,
-            name: AppRouteNames.supervision,
-            builder: (context, state) =>
-                const AuthenticatedHomePage(role: UserRole.supervisor),
-          ),
-          GoRoute(
-            path: AppRoutes.work,
-            name: AppRouteNames.work,
-            builder: (context, state) =>
-                const AuthenticatedHomePage(role: UserRole.executor),
+          ShellRoute(
+            builder: (context, state, child) =>
+                AuthenticatedShell(child: child),
+            routes: [
+              GoRoute(
+                path: AppRoutes.services,
+                name: AppRouteNames.services,
+                builder: (context, state) =>
+                    ChangeNotifierProvider<AreaCatalogViewModel>(
+                      create: (_) => getIt<AreaCatalogViewModel>(),
+                      child: const ServicesCreationPage(),
+                    ),
+              ),
+              GoRoute(
+                path: AppRoutes.myRequests,
+                name: AppRouteNames.myRequests,
+                builder: (context, state) => const MyRequestsPage(),
+              ),
+              GoRoute(
+                path: AppRoutes.supervision,
+                name: AppRouteNames.supervision,
+                builder: (context, state) => const SupervisionPage(),
+              ),
+              GoRoute(
+                path: AppRoutes.work,
+                name: AppRouteNames.work,
+                builder: (context, state) => const WorkBoardPage(),
+              ),
+            ],
           ),
         ],
       );

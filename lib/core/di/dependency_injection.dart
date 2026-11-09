@@ -1,12 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
+import 'package:internal_request_app/data/datasources/area_remote_data_source.dart';
 import 'package:internal_request_app/data/datasources/auth_remote_datasource.dart';
 import 'package:internal_request_app/data/datasources/user_profile_remote_datasource.dart';
+import 'package:internal_request_app/data/repositories/area_repository_impl.dart';
 import 'package:internal_request_app/data/repositories/auth_repository_impl.dart';
+import 'package:internal_request_app/domain/repositories/area_repository.dart';
 import 'package:internal_request_app/domain/repositories/auth_repository.dart';
+import 'package:internal_request_app/domain/usecases/get_areas.dart';
 import 'package:internal_request_app/domain/usecases/login_user.dart';
 import 'package:internal_request_app/domain/usecases/register_employee.dart';
+import 'package:internal_request_app/presentation/viewmodels/area_catalog_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
@@ -18,6 +24,27 @@ final GetIt getIt = GetIt.instance;
 
 void configureDependencies(AppConfig config) {
   getIt.registerSingleton<AppConfig>(config);
+
+  //Areas y services
+  getIt.registerLazySingleton<http.Client>(
+    http.Client.new,
+    dispose: (client) => client.close(),
+  );
+
+  getIt.registerLazySingleton<AreaRemoteDataSource>(
+    () => AreaRemoteDataSource(
+      client: getIt<http.Client>(),
+      apiBaseUrl: getIt<AppConfig>().apiBaseUrl,
+    ),
+  );
+  getIt.registerLazySingleton<AreaRepository>(
+    () => AreaRepositoryImpl(getIt<AreaRemoteDataSource>()),
+  );
+  getIt.registerFactory<GetAreas>(() => GetAreas(getIt<AreaRepository>()));
+
+  getIt.registerFactory<AreaCatalogViewModel>(
+    () => AreaCatalogViewModel(getIt<GetAreas>()),
+  );
 
   //Auth
   getIt.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
