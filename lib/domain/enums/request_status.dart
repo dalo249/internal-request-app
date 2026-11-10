@@ -1,11 +1,10 @@
 enum RequestStatus {
-  requested('solicitada'),  
-  approved('autorizada'),
-  inProgress('en proceso'),
-  completed('por validar'),
-  closed('cerrada'),
-  rejected('rechazada');
-
+  requested('requested'),
+  approved('approved'),
+  inProgress('inProgress'),
+  completed('completed'),
+  closed('closed'),
+  rejected('rejected');
 
   const RequestStatus(this.value);
 

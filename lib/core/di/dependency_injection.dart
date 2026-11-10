@@ -3,16 +3,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:internal_request_app/data/datasources/area_remote_data_source.dart';
+import 'package:internal_request_app/data/datasources/request_local_data_source.dart';
+import 'package:internal_request_app/data/datasources/request_remote_data_source.dart';
 import 'package:internal_request_app/data/datasources/auth_remote_datasource.dart';
 import 'package:internal_request_app/data/datasources/user_profile_remote_datasource.dart';
+import 'package:internal_request_app/data/local/app_database.dart';
 import 'package:internal_request_app/data/repositories/area_repository_impl.dart';
+import 'package:internal_request_app/data/repositories/request_repository_impl.dart';
 import 'package:internal_request_app/data/repositories/auth_repository_impl.dart';
 import 'package:internal_request_app/domain/repositories/area_repository.dart';
+import 'package:internal_request_app/domain/repositories/request_repository.dart';
 import 'package:internal_request_app/domain/repositories/auth_repository.dart';
 import 'package:internal_request_app/domain/usecases/get_areas.dart';
+import 'package:internal_request_app/domain/usecases/create_request.dart';
 import 'package:internal_request_app/domain/usecases/login_user.dart';
 import 'package:internal_request_app/domain/usecases/register_employee.dart';
 import 'package:internal_request_app/presentation/viewmodels/area_catalog_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/create_request_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
@@ -24,6 +31,31 @@ final GetIt getIt = GetIt.instance;
 
 void configureDependencies(AppConfig config) {
   getIt.registerSingleton<AppConfig>(config);
+
+  // Request (persistencia local con drift)
+  getIt.registerLazySingleton<AppDatabase>(
+    AppDatabase.new,
+    dispose: (database) => database.close(),
+  );
+  getIt.registerLazySingleton<RequestLocalDataSource>(
+    () => RequestLocalDataSource(getIt<AppDatabase>()),
+  );
+  getIt.registerLazySingleton<RequestRemoteDataSource>(
+    () => RequestRemoteDataSource(getIt<FirebaseFirestore>()),
+  );
+  getIt.registerLazySingleton<RequestRepository>(
+    () => RequestRepositoryImpl(
+      getIt<RequestLocalDataSource>(),
+      getIt<RequestRemoteDataSource>(),
+      getIt<UserProfileRemoteDataSource>(),
+    ),
+  );
+  getIt.registerFactory<CreateRequest>(
+    () => CreateRequest(getIt<RequestRepository>()),
+  );
+  getIt.registerFactory<CreateRequestViewModel>(
+    () => CreateRequestViewModel(getIt<CreateRequest>()),
+  );
 
   //Areas y services
   getIt.registerLazySingleton<http.Client>(

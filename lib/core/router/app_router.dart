@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:internal_request_app/presentation/pages/auth_page.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/area_catalog_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/create_request_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:provider/provider.dart';
@@ -65,11 +66,17 @@ class AppRouter {
               GoRoute(
                 path: AppRoutes.services,
                 name: AppRouteNames.services,
-                builder: (context, state) =>
+                builder: (context, state) => MultiProvider(
+                  providers: [
                     ChangeNotifierProvider<AreaCatalogViewModel>(
                       create: (_) => getIt<AreaCatalogViewModel>(),
-                      child: const ServicesCreationPage(),
                     ),
+                    ChangeNotifierProvider<CreateRequestViewModel>(
+                      create: (_) => getIt<CreateRequestViewModel>(),
+                    ),
+                  ],
+                  child: const ServicesCreationPage(),
+                ),
               ),
               GoRoute(
                 path: AppRoutes.myRequests,

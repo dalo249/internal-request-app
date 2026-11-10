@@ -1,0 +1,102 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      allow get: if signedIn()
+        && request.auth.uid == userId;
+
+      allow list: if signedIn()
+        && resource.data.role == 'supervisor';
+
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll([
+          'name',
+          'email',
+          'role',
+          'areaId',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'name',
+          'email',
+          'role',
+          'areaId',
+          'createdAt'
+        ])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.email is string
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'employee'
+        && request.resource.data.areaId == '4'
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
+
+    match /requests/{requestId} {
+      allow get, list: if signedIn()
+        && (
+          resource.data.requesterId == request.auth.uid
+          || resource.data.approverId == request.auth.uid
+          || resource.data.executorId == request.auth.uid
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll([
+          'id',
+          'serviceId',
+          'requesterId',
+          'description',
+          'status',
+          'progress',
+          'approverId',
+          'executorId',
+          'priority',
+          'limitDate',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'serviceId',
+          'requesterId',
+          'description',
+          'status',
+          'progress',
+          'approverId',
+          'executorId',
+          'priority',
+          'limitDate',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.id == requestId
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.serviceId is string
+        && request.resource.data.serviceId.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.status == 'requested'
+        && request.resource.data.progress == 0
+        && request.resource.data.approverId is string
+        && request.resource.data.approverId != request.auth.uid
+        && get(
+          /databases/$(database)/documents/users/$(request.resource.data.approverId)
+        ).data.role == 'supervisor'
+        && request.resource.data.executorId == null
+        && request.resource.data.priority == null
+        && request.resource.data.limitDate == null
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update, delete: if false;
+    }
+  }
+}

@@ -10,6 +10,29 @@ class UserProfileRemoteDataSource {
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
 
+  Future<Result<List<UserProfile>>> getSupervisors() async {
+    try {
+      final snapshot = await _users
+          .where('role', isEqualTo: 'supervisor')
+          .get();
+      final supervisors = snapshot.docs.map((document) {
+        final data = Map<String, dynamic>.from(document.data());
+        final createdAt = data['createdAt'];
+        if (createdAt is Timestamp) {
+          data['createdAt'] = createdAt.toDate().toIso8601String();
+        }
+        data['uid'] = document.id;
+        return UserProfile.fromJson(data);
+      }).toList();
+
+      return Result.ok(supervisors);
+    } on FirebaseException catch (exception) {
+      return Result.error(exception);
+    } on Exception catch (exception) {
+      return Result.error(exception);
+    }
+  }
+
   Future<Result<void>> createProfile(UserProfile profile) async {
     final data = profile.toJson()..['createdAt'] = FieldValue.serverTimestamp();
 

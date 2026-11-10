@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:internal_request_app/domain/errors/area_catalog_failures.dart';
+import 'package:internal_request_app/domain/errors/create_request_exception.dart';
 import 'package:internal_request_app/domain/models/area.dart';
+import 'package:internal_request_app/domain/models/request_record.dart';
 import 'package:internal_request_app/domain/models/service.dart';
 import 'package:internal_request_app/presentation/viewmodels/area_catalog_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/create_request_view_model.dart';
 import 'package:provider/provider.dart';
 
 class ServicesCreationPage extends StatefulWidget {
@@ -44,21 +48,97 @@ class _ServicesCreationPageState extends State<ServicesCreationPage> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() != true) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'El formulario está listo, pero la creación de solicitudes aún no está conectada.',
-        ),
-      ),
+    final profile = context.read<AuthGateViewModel>().state.profile;
+    if (profile == null) {
+      _showMessage('No se pudo identificar al usuario autenticado.');
+      return;
+    }
+
+    final service = _selectedService;
+    if (service == null) return;
+
+    final viewModel = context.read<CreateRequestViewModel>();
+    await viewModel.createRequest(
+      requesterId: profile.uid,
+      serviceId: service.id,
+      description: _descriptionController.text,
     );
+
+    if (!mounted) return;
+
+    final state = viewModel.state;
+    switch (state.status) {
+      case CreateRequestStatus.success:
+        final record = state.record!;
+        final message = switch (record.syncStatus) {
+          RequestSyncStatus.synced =>
+            'Solicitud guardada y sincronizada correctamente.',
+          RequestSyncStatus.pending =>
+            'Solicitud guardada localmente. Está pendiente de sincronización.',
+          RequestSyncStatus.conflict => 'La solicitud requiere revisión.',
+        };
+        _showMessage(message);
+        viewModel.reset();
+        _clearSelection();
+      case CreateRequestStatus.validationFailure:
+        _showMessage(_validationMessage(state.validationError));
+      case CreateRequestStatus.persistenceFailure:
+        _showMessage('No se pudo guardar la solicitud.');
+      case CreateRequestStatus.assignmentFailure:
+        _showMessage(_assignmentMessage(state.assignmentError));
+      case CreateRequestStatus.unexpectedFailure:
+        _showMessage('No se pudo crear la solicitud. Inténtalo de nuevo.');
+      case CreateRequestStatus.idle:
+      case CreateRequestStatus.submitting:
+        break;
+    }
+  }
+
+  String _validationMessage(CreateRequestValidationError? error) {
+    return switch (error) {
+      CreateRequestValidationError.requesterRequired =>
+        'Inicia sesión para continuar.',
+      CreateRequestValidationError.serviceRequired => 'Selecciona un servicio.',
+      CreateRequestValidationError.descriptionRequired =>
+        'Ingresa una descripción para la solicitud.',
+      null => 'Revisa los datos de la solicitud.',
+    };
+  }
+
+  String _assignmentMessage(RequestAssignmentException? error) {
+    return switch (error?.failure) {
+      RequestAssignmentFailure.noEligibleSupervisor =>
+        'No hay otro supervisor disponible.',
+      RequestAssignmentFailure.authentication =>
+        'Inicia sesión e inténtalo de nuevo.',
+      RequestAssignmentFailure.supervisorLookupDenied =>
+        'No se pudo consultar la lista de supervisores.',
+      RequestAssignmentFailure.permissionDenied =>
+        'No se pudo crear la solicitud. Revisa los permisos de Firestore.',
+      RequestAssignmentFailure.network =>
+        'Problema de conexión. Inténtalo de nuevo.',
+      RequestAssignmentFailure.rejected =>
+        'Los datos de la solicitud no son válidos.',
+      RequestAssignmentFailure.unknown ||
+      null => 'No se pudo crear la solicitud. Inténtalo de nuevo.',
+    };
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AreaCatalogViewModel>().state;
+    final isSubmitting =
+        context.watch<CreateRequestViewModel>().state.status ==
+        CreateRequestStatus.submitting;
 
     return switch (state.status) {
       AreaCatalogStatus.idle || AreaCatalogStatus.loading => const Center(
@@ -67,11 +147,14 @@ class _ServicesCreationPageState extends State<ServicesCreationPage> {
       AreaCatalogStatus.error => _buildError(state.failure),
       AreaCatalogStatus.unexpectedFailure => _buildUnexpectedError(),
       AreaCatalogStatus.empty => _buildEmpty(),
-      AreaCatalogStatus.loaded => _buildCatalog(state.areas),
+      AreaCatalogStatus.loaded => _buildCatalog(
+        state.areas,
+        isSubmitting: isSubmitting,
+      ),
     };
   }
 
-  Widget _buildCatalog(List<Area> areas) {
+  Widget _buildCatalog(List<Area> areas, {required bool isSubmitting}) {
     return Form(
       key: _formKey,
       child: ListView(
@@ -106,13 +189,15 @@ class _ServicesCreationPageState extends State<ServicesCreationPage> {
                         : null,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        if (isSelected) return;
-                        setState(() {
-                          _selectedService = service;
-                          _descriptionController.clear();
-                        });
-                      },
+                      onTap: isSubmitting
+                          ? null
+                          : () {
+                              if (isSelected) return;
+                              setState(() {
+                                _selectedService = service;
+                                _descriptionController.clear();
+                              });
+                            },
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
@@ -156,6 +241,7 @@ class _ServicesCreationPageState extends State<ServicesCreationPage> {
                               const SizedBox(height: 12),
                               TextFormField(
                                 controller: _descriptionController,
+                                enabled: !isSubmitting,
                                 decoration: const InputDecoration(
                                   labelText: 'Descripción de la solicitud',
                                   hintText:
@@ -174,8 +260,16 @@ class _ServicesCreationPageState extends State<ServicesCreationPage> {
                               ),
                               const SizedBox(height: 12),
                               FilledButton(
-                                onPressed: _submit,
-                                child: const Text('Enviar solicitud'),
+                                onPressed: isSubmitting ? null : _submit,
+                                child: isSubmitting
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Text('Enviar solicitud'),
                               ),
                             ],
                           ],
