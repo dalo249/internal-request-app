@@ -15,6 +15,7 @@ import 'package:internal_request_app/domain/repositories/area_repository.dart';
 import 'package:internal_request_app/domain/repositories/request_repository.dart';
 import 'package:internal_request_app/domain/repositories/auth_repository.dart';
 import 'package:internal_request_app/domain/usecases/get_areas.dart';
+import 'package:internal_request_app/domain/usecases/get_requests_for_requester.dart';
 import 'package:internal_request_app/domain/usecases/create_request.dart';
 import 'package:internal_request_app/domain/usecases/login_user.dart';
 import 'package:internal_request_app/domain/usecases/register_employee.dart';
@@ -23,6 +24,7 @@ import 'package:internal_request_app/presentation/viewmodels/create_request_view
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/my_requests_view_model.dart';
 
 import '../config/app_config.dart';
 import '../router/app_router.dart';
@@ -55,6 +57,12 @@ void configureDependencies(AppConfig config) {
   );
   getIt.registerFactory<CreateRequestViewModel>(
     () => CreateRequestViewModel(getIt<CreateRequest>()),
+  );
+  getIt.registerFactory<GetRequestsForRequester>(
+    () => GetRequestsForRequester(getIt<RequestRepository>()),
+  );
+  getIt.registerFactory<MyRequestsViewModel>(
+    () => MyRequestsViewModel(getIt<GetRequestsForRequester>()),
   );
 
   //Areas y services

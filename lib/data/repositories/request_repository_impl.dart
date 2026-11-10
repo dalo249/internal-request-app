@@ -4,8 +4,10 @@ import 'package:internal_request_app/data/datasources/request_local_data_source.
 import 'package:internal_request_app/data/datasources/request_remote_data_source.dart';
 import 'package:internal_request_app/data/datasources/user_profile_remote_datasource.dart';
 import 'package:internal_request_app/domain/errors/create_request_exception.dart';
+import 'package:internal_request_app/domain/errors/get_requests_exception.dart';
 import 'package:internal_request_app/domain/models/request.dart';
 import 'package:internal_request_app/domain/models/request_record.dart';
+import 'package:internal_request_app/domain/models/requester_requests.dart';
 import 'package:internal_request_app/domain/models/user_profile.dart';
 import 'package:internal_request_app/domain/repositories/request_repository.dart';
 
@@ -91,8 +93,73 @@ final class RequestRepositoryImpl implements RequestRepository {
   }
 
   @override
-  Future<List<RequestRecord>> getRequestsForRequester(String requesterId) {
-    return _requestLocalDataSource.getRequestsForRequester(requesterId);
+  Future<Result<RequesterRequests>> getRequestsForRequester(
+    String requesterId,
+  ) async {
+    final remoteResult = await _requestRemoteDataSource.getRequestsForRequester(
+      requesterId,
+    );
+
+    switch (remoteResult) {
+      case Ok<List<RequestRecord>>():
+        try {
+          await _requestLocalDataSource.cacheSyncedRequests(remoteResult.value);
+          final records = await _requestLocalDataSource.getRequestsForRequester(
+            requesterId,
+          );
+          return Result.ok(
+            RequesterRequests(records: records, isFromCache: false),
+          );
+        } on Exception catch (_) {
+          return Result.ok(
+            RequesterRequests(
+              records: remoteResult.value,
+              isFromCache: false,
+              notice: 'No se pudo actualizar la copia local.',
+            ),
+          );
+        }
+      case Error<List<RequestRecord>>():
+        try {
+          final cachedRecords = await _requestLocalDataSource
+              .getRequestsForRequester(requesterId);
+          if (cachedRecords.isNotEmpty) {
+            return Result.ok(
+              RequesterRequests(
+                records: cachedRecords,
+                isFromCache: true,
+                notice: _requestCacheNotice(remoteResult.error),
+              ),
+            );
+          }
+        } on Exception catch (_) {
+          return Result.error(
+            const GetRequestsException(
+              'No se pudieron cargar las solicitudes guardadas.',
+            ),
+          );
+        }
+
+        return Result.error(
+          const GetRequestsException(
+            'No se pudieron cargar las solicitudes. Inténtalo de nuevo.',
+          ),
+        );
+    }
+  }
+
+  String _requestCacheNotice(Exception exception) {
+    if (exception is FirebaseException) {
+      return switch (exception.code) {
+        'permission-denied' =>
+          'Sin permiso para consultar. Mostrando datos guardados.',
+        'unauthenticated' =>
+          'Inicia sesión para actualizar. Mostrando datos guardados.',
+        _ => 'No se pudo actualizar. Mostrando datos guardados.',
+      };
+    }
+
+    return 'No se pudo actualizar. Mostrando datos guardados.';
   }
 
   //mapeo de excepciones

@@ -11,6 +11,7 @@ import 'package:internal_request_app/presentation/viewmodels/auth_gate_view_mode
 import 'package:internal_request_app/presentation/viewmodels/area_catalog_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/create_request_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/login_user_view_model.dart';
+import 'package:internal_request_app/presentation/viewmodels/my_requests_view_model.dart';
 import 'package:internal_request_app/presentation/viewmodels/register_employee_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -81,7 +82,11 @@ class AppRouter {
               GoRoute(
                 path: AppRoutes.myRequests,
                 name: AppRouteNames.myRequests,
-                builder: (context, state) => const MyRequestsPage(),
+                builder: (context, state) =>
+                    ChangeNotifierProvider<MyRequestsViewModel>(
+                      create: (_) => getIt<MyRequestsViewModel>(),
+                      child: const MyRequestsPage(),
+                    ),
               ),
               GoRoute(
                 path: AppRoutes.supervision,

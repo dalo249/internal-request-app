@@ -77,6 +77,33 @@ class RequestLocalDataSource {
     return rows.map(_toDomain).toList();
   }
 
+  Future<void> cacheSyncedRequests(List<RequestRecord> records) async {
+    await db.transaction(() async {
+      for (final record in records) {
+        await db
+            .into(db.requests)
+            .insertOnConflictUpdate(
+              RequestsCompanion.insert(
+                id: record.request.id,
+                serviceId: record.request.serviceId,
+                requesterId: record.request.requesterId,
+                description: record.request.description,
+                status: Value(record.request.status.value),
+                progress: Value(record.request.progress),
+                approverId: Value(record.request.approverId),
+                executorId: Value(record.request.executorId),
+                priority: Value(record.request.priority?.value),
+                limitDate: Value(record.request.limitDate),
+                createdAt: record.createdAt,
+                updatedAt: record.updatedAt,
+                syncStatus: Value(RequestSyncStatus.synced.name),
+                lastSyncError: const Value(null),
+              ),
+            );
+      }
+    });
+  }
+
   Future<List<RequestRecord>> getPendingRequests() async {
     final rows =
         await (db.select(db.requests)

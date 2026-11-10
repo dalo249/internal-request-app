@@ -4,6 +4,7 @@ import 'package:internal_request_app/domain/enums/request_status.dart';
 import 'package:internal_request_app/domain/errors/create_request_exception.dart';
 import 'package:internal_request_app/domain/models/request.dart';
 import 'package:internal_request_app/domain/models/request_record.dart';
+import 'package:internal_request_app/domain/models/requester_requests.dart';
 import 'package:internal_request_app/domain/repositories/request_repository.dart';
 import 'package:internal_request_app/domain/usecases/create_request.dart';
 
@@ -140,7 +141,11 @@ class _FakeRequestRepository implements RequestRepository {
   }
 
   @override
-  Future<List<RequestRecord>> getRequestsForRequester(String requesterId) {
-    throw UnimplementedError();
+  Future<Result<RequesterRequests>> getRequestsForRequester(
+    String requesterId,
+  ) {
+    return Future.value(
+      Result.ok(const RequesterRequests(records: [], isFromCache: false)),
+    );
   }
 }
